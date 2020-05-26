@@ -14,6 +14,7 @@ import CikisScreen from "./screens/Cikis";
 import PostListScreen from "./screens/PostList";
 
 import ChatScreen from "./screens/ChatMainScreen";
+import MessageScreen from "./screens/MessageScreen";
 
 import { createAppContainer } from "react-navigation";
 import { createDrawerNavigator } from "react-navigation-drawer";
@@ -59,6 +60,15 @@ const RootStack = createDrawerNavigator(
       screen: ChatScreen,
       navigationOptions: {
         title: "ChatHuB",
+        drawerIcon: ({ tintColor }) => (
+          <Feather name="message-circle" size={16} color={tintColor} />
+        ),
+      },
+    },
+    Message: {
+      screen: MessageScreen,
+      navigationOptions: {
+        title: "Mesaj (Geçici)",
         drawerIcon: ({ tintColor }) => (
           <Feather name="message-circle" size={16} color={tintColor} />
         ),
