@@ -11,7 +11,7 @@ export default class HomeScreen extends React.Component {
       error: "",
       visible: true,
       category: [],
-    };
+    };    
   }
 
   static navigationOptions = {

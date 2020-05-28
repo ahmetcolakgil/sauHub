@@ -1,8 +1,5 @@
-// Home screen
 import React, { Component } from "react";
-//import react in our code.
 import { Text, View } from "react-native";
-//import all the components we are going to use.
 
 export default class ChatSettingScrenn extends React.Component {
   render() {

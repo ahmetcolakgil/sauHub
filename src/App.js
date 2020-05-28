@@ -4,16 +4,10 @@ import Auth from "./screens/Auth";
 import deviceStorage from "./services/deviceStorage.js";
 
 import HomeScreen from "./screens/Home";
-import CategoryScreen from "./screens/Category";
 import ProfileScreen from "./screens/Profile";
-import TopicListScreen from "./screens/TopicList";
-import TopicScreen from "./screens/Topic";
-import NewPostScreen from "./screens/NewPost";
-import PostReplyScreen from "./screens/PostReply";
-import CikisScreen from "./screens/Cikis";
-import PostListScreen from "./screens/PostList";
+import LogoutScreen from "./screens/Logout";
+import ChatMainScreen from "./screens/ChatMainScreen";
 
-import ChatScreen from "./screens/ChatMainScreen";
 import MessageScreen from "./screens/MessageScreen";
 
 import { createAppContainer } from "react-navigation";
@@ -29,15 +23,10 @@ import {
   AntDesign,
 } from "@expo/vector-icons";
 import { Button } from "react-native-paper";
+import SocketIOClient from 'socket.io-client';
 
 const RootStack = createDrawerNavigator(
   {
-    // Profile: ProfileScreen,
-    // Category: CategoryScreen,
-    // NewPost: NewPostScreen,
-    // PostReply: PostReplyScreen,
-    // TopicList: TopicListScreen,
-    // Topic: TopicScreen,
     Home: {
       screen: HomeScreen,
       navigationOptions: {
@@ -57,7 +46,7 @@ const RootStack = createDrawerNavigator(
       },
     },
     Chat: {
-      screen: ChatScreen,
+      screen: ChatMainScreen,
       navigationOptions: {
         title: "ChatHuB",
         drawerIcon: ({ tintColor }) => (
@@ -65,75 +54,17 @@ const RootStack = createDrawerNavigator(
         ),
       },
     },
-    Message: {
+    MessagingTest: {
       screen: MessageScreen,
       navigationOptions: {
-        title: "Mesaj (Geçici)",
+        title: "Messaging Test",
         drawerIcon: ({ tintColor }) => (
           <Feather name="message-circle" size={16} color={tintColor} />
         ),
       },
     },
-    Category: {
-      screen: CategoryScreen,
-      navigationOptions: {
-        title: "Kategoriler",
-        drawerIcon: ({ tintColor }) => (
-          <MaterialCommunityIcons
-            name="subtitles-outline"
-            size={16}
-            color={tintColor}
-          />
-        ),
-      },
-    },
-    PostList: {
-      screen: PostListScreen,
-      navigationOptions: {
-        title: "Konular",
-        drawerIcon: ({ tintColor }) => (
-          <AntDesign name="tags" size={16} color={tintColor} />
-        ),
-      },
-    },
-    NewPost: {
-      screen: NewPostScreen,
-      navigationOptions: {
-        title: "Yeni Konu",
-        drawerIcon: ({ tintColor }) => (
-          <MaterialIcons name="playlist-add" size={16} color={tintColor} />
-        ),
-      },
-    },
-    PostReply: {
-      screen: PostReplyScreen,
-      navigationOptions: {
-        title: "Konu Cevaplama",
-        drawerIcon: ({ tintColor }) => (
-          <MaterialIcons name="reply" size={16} color={tintColor} />
-        ),
-      },
-    },
-    TopicList: {
-      screen: TopicListScreen,
-      navigationOptions: {
-        title: "TopicList",
-        drawerIcon: ({ tintColor }) => (
-          <Feather name="list" size={16} color={tintColor} />
-        ),
-      },
-    },
-    Topic: {
-      screen: TopicScreen,
-      navigationOptions: {
-        title: "Topic",
-        drawerIcon: ({ tintColor }) => (
-          <Feather name="list" size={16} color={tintColor} />
-        ),
-      },
-    },
     Cikis: {
-      screen: "CikisScreen",
+      screen: LogoutScreen,
       navigationOptions: {
         title: "Çıkış Yap",
         drawerIcon: ({ tintColor }) => (
@@ -161,7 +92,7 @@ export default class App extends Component {
     this.newJWT = this.newJWT.bind(this);
     this.deleteJWT = deviceStorage.deleteJWT.bind(this);
     this.loadJWT = deviceStorage.loadJWT.bind(this);
-
+    this.socket = SocketIOClient('http://192.168.1.102:8080');
     this.loadJWT();
   }
 
@@ -179,7 +110,7 @@ export default class App extends Component {
     } else if (this.state.jwt) {
       return (
         <AppContainer
-          screenProps={{ deleteJWT: this.deleteJWT, jwt: this.jwt }}
+          screenProps={{ deleteJWT: this.deleteJWT, jwt: this.jwt, socket: this.socket }}
         />
       );
     }

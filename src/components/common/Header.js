@@ -45,31 +45,22 @@ const Header = ({ onPress, title, subtitle }) => {
   );
 };
 
-const HeaderChat = ({ onPress, title, subtitle }) => {
+const HeaderChat = ({ openMenu, refresh, title, subtitle }) => {
   return (
     <Appbar.Header style={{ backgroundColor: "#ad063b" }}>
-      <Appbar.Action icon="menu" onPress={onPress} />
+      <Appbar.Action icon="menu" onPress={openMenu} />
       <Appbar.Content
         title={<Text> {title} </Text>}
         subtitle={subtitle}
         style={{ alignItems: "center" }}
       />
-      <Appbar.Action />
+      <Appbar.Action icon="refresh" onPress={refresh} />
     </Appbar.Header>
   );
 };
 
 const TopBarChat2 = ({ onPress, title, subtitle }) => {
   return (
-    /*   <Appbar.Header style={{ height: "2%", backgroundColor: "" }}>
-      <Appbar.Action icon="menu" onPress={onPress} />
-      <Appbar.Content
-        title={<Text> {title} </Text>}
-        subtitle={subtitle}
-        style={{ alignItems: "center" }}
-      />
-    </Appbar.Header>*/
-
     <View style={{ flexDirection: "row" }}>
       <View
         style={{

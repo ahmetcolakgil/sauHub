@@ -14,54 +14,30 @@ class Login extends Component {
       error: "",
       loading: false,
     };
-    this.loginUser2 = this.loginUser2.bind(this);
+    this.loginUser = this.loginUser.bind(this);
     this.onLoginFail = this.onLoginFail.bind(this);
   }
-  loginUser2() {
+  loginUser() {
     const { username, password } = this.state;
 
     this.setState({ error: "", loading: true });
 
     // NOTE Post to HTTPS only in production
     axios
-      .post("http://192.168.0.104:8000/users/login", {
+      .post("http://192.168.1.102:8080/api/auth/login", {
         username: username,
         password: password,
       })
       .then((response) => {
-        deviceStorage.saveItem("id_token", response.data.token);
-        this.props.newJWT(response.data.token);
+        deviceStorage.saveItem("id_token", response.data);
+        this.props.newJWT(response.data);
       })
       .catch((error) => {
         console.log(error);
         console.log(error.response.data);
         this.onLoginFail(error.response.data);
-        //deviceStorage.saveItem("id_token", "denemegiris");
-        //this.props.newJWT("denemegiris");
       });
   }
-  /*loginUser() {
-    const { email, password } = this.state;
-
-    this.setState({ error: "", loading: true });
-
-    // NOTE Post to HTTPS only in production
-    axios
-      .post("https://sauhub.herokuapp.com/api/user/login", {
-        email: email,
-        password: password,
-      })
-      .then((response) => {
-        deviceStorage.saveItem("id_token", response.data.token);
-        this.props.newJWT(response.data.token);
-      })
-      .catch((error) => {
-        console.log(error.response.data);
-        this.onLoginFail(error.response.data);
-        //deviceStorage.saveItem("id_token", "denemegiris");
-        //this.props.newJWT("denemegiris");
-      });
-  }*/
   onLoginFail(error) {
     this.setState({
       error: error,
@@ -110,7 +86,7 @@ class Login extends Component {
 
             {!loading ? (
               <Button
-                onPress={this.loginUser2}
+                onPress={this.loginUser}
                 mode="contained"
                 style={{ alignSelf: "center", width: "70%" }}
               >

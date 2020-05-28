@@ -7,94 +7,23 @@ import {
   StyleSheet,
   SafeAreaView,
   FlatList,
-  ListView,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 //import all the components we are going to use.
 import { ListItem } from "react-native-elements";
 import {
-  BottomNavigation,
   FAB,
   Portal,
   Provider,
   Dialog,
   Button,
   Paragraph,
-  TextInput,
-  Headline,
-  List,
 } from "react-native-paper";
-import { Input, Header, Loading } from "../components/common";
-import { Actions as NavigationActions } from "react-native-router-flux";
-import { NavigationContainer } from "@react-navigation/native";
-import { createAppContainer } from "react-navigation";
-import { createStackNavigator } from "react-navigation-stack";
+import { Input} from "../components/common";
+import axios from "axios";
+import { AsyncStorage } from "react-native";
+import SocketIOClient from 'socket.io-client';
 
-import MessageScreen from "./MessageScreen";
-
-const DATA = [
-  {
-    name: "Şamil",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg",
-    subtitle: "asdfghjklş",
-  },
-  {
-    name: "Ahmet",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg",
-    subtitle: "şlkjhgfd",
-  },
-  {
-    name: "Şamil",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg",
-    subtitle: "asdfghjklş",
-  },
-  {
-    name: "Ahmet",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg",
-    subtitle: "şlkjhgfd",
-  },
-  {
-    name: "Şamil",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg",
-    subtitle: "asdfghjklş",
-  },
-  {
-    name: "Ahmet",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg",
-    subtitle: "şlkjhgfd",
-  },
-  {
-    name: "Şamil",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg",
-    subtitle: "asdfghjklş",
-  },
-  {
-    name: "Ahmet",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg",
-    subtitle: "şlkjhgfd",
-  },
-  {
-    name: "Şamil",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/ladylexy/128.jpg",
-    subtitle: "asdfghjklş",
-  },
-  {
-    name: "Ahmet",
-    avatar_url:
-      "https://s3.amazonaws.com/uifaces/faces/twitter/adhamdannaway/128.jpg",
-    subtitle: "şlkjhgfdasdfhjlşsdfhjklşdfghjldfghjlşdfghjlşdfghjlşfghjlş.fghjk",
-  },
-];
 
 const Item = ({ title }) => {
   return (
@@ -104,9 +33,11 @@ const Item = ({ title }) => {
   );
 };
 
-export default class FirstPage extends React.Component {
+export default class ContactsScreen extends React.Component {
   constructor(props) {
     super(props);
+
+    this.socket = this.props.screenProps.socket;
   }
 
   state = {
@@ -115,7 +46,75 @@ export default class FirstPage extends React.Component {
     text: "",
     name: "",
     time: "",
+
+    contacts: [],
+    user: {},
+    error: "",
+    loading: false,
   };
+
+  componentDidMount() {
+    this.fetchUser();
+  }
+
+  fetchUser() {
+    this.setState({ error: "", loading: true });
+    // NOTE Post to HTTPS only in production
+    AsyncStorage.getItem("id_token").then(value => {
+      const headers = {
+        "auth-token": value
+      };
+      axios({
+        method: "GET",
+        url: "http://192.168.1.102:8080/api/user/getCurrentUser",
+        headers: headers
+      })
+        .then((response) => {
+          this.setState({ user: response.data});
+        })
+        .catch((error) => {
+          console.log(error);
+          console.log(error.response.data);
+        })
+        .finally(() => {
+          this.setState({ loading: false });
+          this.joinServer();
+        });
+    });
+  }
+
+  joinServer() {
+    const { user } = this.state;
+    
+    this.socket.on('loggedIn', (users) => {         
+      users.forEach(element => {
+        if (element.isOnline) {
+          element.status = 'success';
+          element.statusContext = 'Çevrimiçi';
+        } else {
+          element.status = 'error';
+          element.statusContext = 'Çevrimdışı';
+        }
+
+        if (user.contacts.find((c) => c._id === element._id)) {
+          this.setState({ contacts: [...this.state.contacts, element] })
+        }
+      });
+
+      this.socket.emit('newUser', user);
+    });
+    this.listen();
+  };
+
+  listen() {
+    this.socket.on('userOnline', (user) => {
+
+    });
+    this.socket.on('userLeft', (user) => {
+ 
+    });
+  };
+
   goToMessageScreen = () => {
     alert("123");
   };
@@ -133,10 +132,10 @@ export default class FirstPage extends React.Component {
   renderItem = ({ item }) => (
     <ListItem
       Component={TouchableOpacity}
-      title={item.name}
+      title={item.username}
       titleStyle={{ fontSize: 18 }}
       containerStyle={{ display: "flex", alignItems: "center" }}
-      subtitle={item.subtitle}
+      subtitle={item.statusContext}
       subtitleStyle={{ fontSize: 14, overflow: "hidden" }}
       leftAvatar={{
         size: "large",
@@ -150,6 +149,20 @@ export default class FirstPage extends React.Component {
           {this.time}
         </Text>
       }
+      badge={{
+        status: item.status,
+        containerStyle: {
+          position: "absolute",
+          left: 52,
+          bottom: 5,
+          height: 20,
+        },
+        badgeStyle: {
+          borderRadius: 10,
+          width: 12,
+          height: 12,
+        },
+      }}
       onPress={this.goToMessageScreen}
       bottomDivider
       chevron
@@ -160,8 +173,7 @@ export default class FirstPage extends React.Component {
 
   _onStateChange = ({ open }) => this.setState({ open });
   render() {
-    const { open } = this.state;
-    const { text } = this.state;
+    const { open, text, contacts, visible } = this.state;
     const { section } = styles;
     var hours = new Date().getHours();
     var min = new Date().getMinutes();
@@ -171,7 +183,7 @@ export default class FirstPage extends React.Component {
       <View style={{ flex: 1 }}>
         <SafeAreaView>
           <FlatList
-            data={DATA}
+            data={contacts}
             keyExtractor={this.keyExtractor}
             renderItem={this.renderItem}
           ></FlatList>
@@ -202,7 +214,7 @@ export default class FirstPage extends React.Component {
                 }
               }}
             />
-            <Dialog visible={this.state.visible} onDismiss={this._hideDialog}>
+            <Dialog visible={visible} onDismiss={this._hideDialog}>
               <View style={{ alignSelf: "center" }}>
                 <Dialog.Title>Group Oluşturma</Dialog.Title>
               </View>

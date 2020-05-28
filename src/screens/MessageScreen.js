@@ -1,6 +1,4 @@
-// Home screen
-import React, { useState } from "react";
-//import react in our code.
+import React from 'react';
 import {
   Text,
   Platform,
@@ -17,37 +15,107 @@ import {
   Send,
   InputToolbar,
 } from "react-native-gifted-chat";
-//import all the components we are going to use.
+import axios from "axios";
+import { AsyncStorage } from "react-native";
 
 export default class MessageScreen extends React.Component {
   constructor(props) {
     super(props);
     this.text = {};
-    this.state = { messages: [] };
+    this.state={
+      messages: [],
+      user: {},
+      targetUser: {
+        _id: "5ecee022f46ac358788e7482",
+        username: "samil",
+      }
+    },
+
+    this.socket = this.props.screenProps.socket;
     this.handleSend = this.handleSend.bind(this);
   }
-  componentWillMount() {
-    this.setState({
-      messages: [
-        {
-          _id: 0,
-          text: "New room created.",
-          createdAt: new Date().getTime(),
-          system: true,
-        },
-        // example of chat message
-        {
-          _id: 1,
-          text: "Selam Fıstık!",
-          createdAt: new Date().getTime(),
+  componentDidMount() {
+    this.fetchUser();
+  }
+
+  fetchMessageHistory() {
+    const { user, targetUser } = this.state;
+    const params = {
+      messageFrom: {_id: user._id, username: user.username },
+      messageTo: targetUser,
+      userSocket: user.socket,
+    };
+    this.socket.emit('joinPM', (params));
+    this.socket.on('pmMessages', (data) => {
+      console.log(data);
+      data.forEach(element => {
+        const messageHistory = [];
+        messageHistory.push({
+          _id: element._id,
+          text: element.content,
+          createdAt: element.dateSend,
           user: {
-            _id: 2,
-            name: "Güzellik",
+            _id: element.messageFrom._id,
+            name: element.messageFrom.username,
           },
-        },
-      ],
+        });
+        this.setState((previousState) => ({
+          messages: GiftedChat.append(previousState.messages, messageHistory),
+        }));
+      });
+      });
+  }
+
+  fetchUser() {
+    this.setState({ error: "", loading: true });
+
+    // NOTE Post to HTTPS only in production
+    AsyncStorage.getItem("id_token").then(value => {
+      const headers = {
+        "auth-token": value
+      };
+      axios({
+        method: "GET",
+        url: "http://192.168.1.102:8080/api/user/getCurrentUser",
+        headers: headers
+      })
+        .then((response) => {          
+          this.setState({ user: response.data});
+        })
+        .catch((error) => {
+          console.log(error.response.data);
+        })
+        .finally(() => {
+          this.setState({ loading: false });
+          this.fetchMessageHistory();
+          this.onReceivedMessage();
+        });
     });
   }
+
+  onReceivedMessage(){
+    this.socket.on('getMessage', (data) => {
+      this.setState((previousState) => ({
+        messages: GiftedChat.append(previousState.messages, data),
+      }));
+    });
+  }
+
+  handleSend(newMessage = []) {    
+    const { user, targetUser } = this.state;
+      const data = {
+        messageFrom: { _id: user._id, username: user.username },
+        messageTo: targetUser,
+        content: newMessage[0].text,
+      };
+    this.socket.emit('sendMessage', (data));      
+    this.setState((previousState) => {
+      return {
+        messages: GiftedChat.append(this.state.messages, newMessage),
+      };
+    });
+  }
+
   renderBubble(props) {
     return (
       // Step 3: return the component
@@ -67,6 +135,7 @@ export default class MessageScreen extends React.Component {
       />
     );
   }
+
   renderSend(props) {
     return (
       <Send {...props}>
@@ -76,6 +145,7 @@ export default class MessageScreen extends React.Component {
       </Send>
     );
   }
+
   scrollToBottomComponent() {
     return (
       <View style={styles.bottomComponentContainer}>
@@ -83,38 +153,9 @@ export default class MessageScreen extends React.Component {
       </View>
     );
   }
-  handleSend(newMessage = []) {
-    this.setState((previousState) => {
-      return {
-        messages: GiftedChat.append(this.state.messages, newMessage),
-      };
-    });
-  }
+
   renderInputToolbar(props) {
     return (
-      /*  <View style={styles.container}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Bir mesaj yaz"
-          textInputProps={null}
-          multiline={true}
-          disableComposer={false}
-          textInputAutoFocus={false}
-          keyboardAppearance="default"
-        />
-        <View style={{ flex: 1 }}>
-          <Send {...props} style={{ paddingLeft: 1, paddingRight: 2 }}>
-            <View style={styles.sendingContainer}>
-              <IconButton
-                icon="send-circle"
-                onPress={(newMessage) => this.handleSend(newMessage)}
-                size={56}
-                color="#ad063b"
-              />
-            </View>
-          </Send>
-        </View>
-      </View>*/
       <InputToolbar {...props}></InputToolbar>
     );
   }
@@ -124,13 +165,13 @@ export default class MessageScreen extends React.Component {
       <View style={{ flex: 1 }}>
         <HeaderChat
           title="Message"
-          onPress={this.props.navigation.openDrawer}
+          openMenu={this.props.navigation.openDrawer}
         />
 
         <GiftedChat
           messages={this.state.messages}
           onSend={(newMessage) => this.handleSend(newMessage)}
-          user={{ _id: 1 }}
+          user={{ _id: this.state.user._id, name: this.state.user.username }}
           renderBubble={this.renderBubble}
           placeholder="Bir mesaj yaz"
           showUserAvatar
@@ -140,6 +181,7 @@ export default class MessageScreen extends React.Component {
           scrollToBottomComponent={this.scrollToBottomComponent}
           renderAvatarOnTop
           renderUsernameOnMessage
+          forceGetKeyboardHeight
         />
       </View>
     );
