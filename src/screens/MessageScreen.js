@@ -47,7 +47,6 @@ export default class MessageScreen extends React.Component {
     };
     this.socket.emit('joinPM', (params));
     this.socket.on('pmMessages', (data) => {
-      console.log(data);
       data.forEach(element => {
         const messageHistory = [];
         messageHistory.push({
